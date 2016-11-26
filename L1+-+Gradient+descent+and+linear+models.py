@@ -148,8 +148,7 @@ for i in range(1,100):
     x = np.array([-3,-4])
     n_iter = 0
     while (abs(x[0] - 5/3) > 0.01 and abs(x[1] + 4/3) > 0.01):
-        x_new = x - i * alpha * compute_grad(x)
-        x = x_new
+        x = x - i * alpha * compute_grad(x)
         n_iter += 1
         grad_val_x.append(x[0])
         grad_val_y.append(x[1])
@@ -180,7 +179,7 @@ plt.plot(optim_alpha_iters)
 x = np.array([-3,-4])
 n_iter = 0
 alpha = 0.01 * best_alpha
-tol = 10 ** (-9)
+tol = 1E-9
 
 grad_val_x = []
 grad_val_y = []
@@ -236,16 +235,15 @@ def rosenbrock_function_val(x):
 
 optim_alpha_iters = []
 
-tol = 0.00001
+tol = 1E-5
 
-alpha = 0.0001
+alpha = 1E-4
 
 for i in range(1, 200):
     x = np.array([-3, 4])
     n_iter = 0
     while (abs(x[0] - 1) > tol and abs(x[1] - 1) > tol):
-        x_new = x - i * alpha * compute_grad_resonebrock(x)
-        x = x_new
+        x = x - i * alpha * compute_grad_resonebrock(x)
         n_iter += 1
         grad_val_x.append(x[0])
         grad_val_y.append(x[1])
@@ -271,15 +269,14 @@ plt.plot(optim_alpha_iters)
 
 x = np.array([-3,-4])
 n_iter = 0
-alpha = 0.0001 * best_alpha
-tol = 10 ** (-9)
+alpha = 1E-4 * best_alpha
+tol = 1E-9
 
 grad_val_x = []
 grad_val_y = []
 
 while (abs(x[0] - 5/3) > tol and abs(x[1] + 4/3) > tol):
-    x_new = x - alpha * compute_grad(x)
-    x = x_new
+    x = x - alpha * compute_grad(x)
     n_iter += 1
     grad_val_x.append(x[0])
     grad_val_y.append(x[1])
@@ -329,7 +326,7 @@ X1, Y1 = make_classification(n_samples=500, n_features=2, n_redundant=0, n_infor
 plt.scatter(X1[:, 0], X1[:, 1], marker='o', c=Y1, alpha=0.5)
 
 
-# In[710]:
+# In[ ]:
 
 def min_sqr_func(X, y, theta):
     
@@ -339,9 +336,7 @@ def min_sqr_func(X, y, theta):
 
     sqErrors = (predictions - y) ** 2
 
-    J = (1.0 / (2 * m)) * sqErrors.sum()
-
-    return J
+    return sqErrors
 
 
 def gradient_descent(X, y, theta, alpha, num_iters):
@@ -360,6 +355,11 @@ def gradient_descent(X, y, theta, alpha, num_iters):
 
     return theta, history
 
+def quick_error(predictions, y, X):
+    errors_x1 = (predictions - y) * X[:, 0]
+    errors_x2 = (predictions - y) * X[:, 1]
+    return [errors_x1.sum(), errors_x2.sum()]
+
 def quickest_descent(X, y, theta, alpha, num_iters):
     m = y.size
     history = []
@@ -367,12 +367,11 @@ def quickest_descent(X, y, theta, alpha, num_iters):
     for i in range(num_iters):
         predictions = X.dot(theta).flatten()
 
-        errors_x1 = (predictions - y) * X[:, 0]
-        errors_x2 = (predictions - y) * X[:, 1]
+        errors = quick_error(predictions, y, X)
         
-        cur_errors = np.array([[(1.0 / m) * errors_x1.sum()], [(1.0 / m) * errors_x2.sum()]])
+        cur_errors = np.array([[(1.0 / m) * errors[0]], [(1.0 / m) * errors[1]]])
         
-        temp_max = 10 ** 10
+        temp_max = 1E10
         
         for i in range(1,100):
             if (temp_max > min_sqr_func(X,y, theta - 0.01 * i * cur_errors)):
@@ -380,13 +379,15 @@ def quickest_descent(X, y, theta, alpha, num_iters):
                 alpha = i * 0.01
     
 
-        theta[0][0] = theta[0][0] - alpha * (1.0 / m) * errors_x1.sum()
-        theta[1][0] = theta[1][0] - alpha * (1.0 / m) * errors_x2.sum()
+        theta[0][0] = theta[0][0] - alpha * (1.0 / m) * errors[0]
+        theta[1][0] = theta[1][0] - alpha * (1.0 / m) * errors[1]
         
         history.append(min_sqr_func(X,y, theta))
 
-    return theta, history
+    return np.array(theta), history
 
+
+# In[710]:
 
 theta, hist_grad = gradient_descent(X1, Y1, [[0],[1]], 0.01, 200)
 
@@ -422,7 +423,7 @@ quick, = plt.plot([i for i in range(200)], hist_quick, label='quickest descent')
 classic, = plt.plot([i for i in range(200)], hist_grad, label='classic descent')
 plt.xlabel("Iteration")
 plt.ylabel("Function value")
-pylab.legend()
+pylab.legend(
 
 
 # Как видно из 2 графика метод наискорейшего спуска работает значительно быстрее
@@ -453,7 +454,7 @@ pylab.legend()
 # 6. Сколько проходов по данным вы делаете? Почему?
 # 
 
-# In[690]:
+# In[693]:
 
 import pandas as pd
 
@@ -465,19 +466,10 @@ data = pd.read_csv("train.csv")
 data_0 = data[data.label == 0]
 data_1 = data[data.label == 1]
 
-
-# In[691]:
-
 data = pd.concat([data_0, data_1])
-
-
-# In[692]:
 
 data_y = data['label']
 del data['label']
-
-
-# In[693]:
 
 data = data.as_matrix()
 data_y = data_y.tolist()
@@ -511,23 +503,17 @@ def stohastic_logistic_gradient_descent(X, y, theta, alpha, num_iters, batch_siz
     return theta
 
 def predict_stohastic_descent(theta, X_test):
-    ans = []
-    for elem in theta.dot(X_test.T):
-        if (elem >= 0):
-            ans.append(0)
-        else:
-            ans.append(1)
-    return ans
+    return theta.dot(X_test.T) < 0
 
 def accuracy(X_pred, Y_test):
-    err = 0
-    ok = 0
+    errors = 0
+    right_answers_counter = 0
     for i in range(len(X_pred)):
         if X_pred[i] == Y_test[i]:
-            ok += 1
+            right_answers_counter += 1
         else:
-            err += 1
-    return err/len(X_pred)
+            errors += 1
+    return errors/len(X_pred)
 
 ans = stohastic_logistic_gradient_descent(X_train, Y_train,
                                           np.array([0 for i in range(len(X_train[0]))]), 0.01, 1, 1000)
@@ -750,8 +736,7 @@ def adagrad(X, y, theta, alpha, num_iters, batch_size):
     history = []
     shuffledRange = list(range(len(X)))
     
-    #temp_x = []
-    g = 0
+    G = 0
     
     for i in range(num_iters):
         
@@ -761,9 +746,9 @@ def adagrad(X, y, theta, alpha, num_iters, batch_size):
         for batch_x, batch_y in batch_gen(X,y, batch_size):
             Q = batch_x.T.dot( (1./(1+np.exp(-batch_x.dot(theta))) - batch_y))
             #temp_x.append(Q)
-            g += Q.dot(Q.T)
+            G += Q.dot(Q.T)
                 
-            theta = theta - (alpha/(m*(g **1/2 + 0.01)) ) * Q;
+            theta = theta - (alpha/(m*(G **1/2 + 0.01)) ) * Q;
             history.append(accuracy(predict_stohastic_descent(theta, X_test), Y_test))
     return theta, history
 
@@ -826,7 +811,7 @@ def adam(X, y, theta, alpha, num_iters, batch_size, lamb, forget_gate):
     history = []
     shuffledRange = list(range(len(X)))
     
-    g = 0
+    G = 0
     s = 0
     for i in range(num_iters):
         
@@ -835,8 +820,8 @@ def adam(X, y, theta, alpha, num_iters, batch_size, lamb, forget_gate):
         shuffledY = [Y_train[i] for i in shuffledRange]
         for batch_x, batch_y in batch_gen(X,y, batch_size):
             Q = batch_x.T.dot( (1./(1+np.exp(-batch_x.dot(theta))) - batch_y))
-            g = lamb * g + (1 - lamb)*Q.dot(Q.T)
-            s = forget_gate * s + (alpha/(m*(g **1/2 + 0.01)) ) * Q
+            G = lamb * G + (1 - lamb)*Q.dot(Q.T)
+            s = forget_gate * s + (alpha/(m*(G **1/2 + 0.01)) ) * Q
             theta = theta - s;
     return theta
 
@@ -917,13 +902,13 @@ theta_nest, hist_nest = grad_des_nesterov(30000, 0.01, np.array([3,4]), 0.2)
 
 def adagrad(theta, alpha, num_iters):
     history = [[],[]]
-    g = 0
+    G = 0
     
     for i in range(num_iters):
         Q = compute_grad(theta)
         #temp_x.append(Q)
-        g += Q.dot(Q.T)   
-        theta = theta - (alpha/(g **1/2 + 0.01)) * Q;
+        G += Q.dot(Q.T)   
+        theta = theta - (alpha/(G **1/2 + 0.01)) * Q;
         history[0].append(theta[0])
         history[1].append(theta[1])
     return theta, history
@@ -933,13 +918,13 @@ theta_adagrad, hist_adagrad = adagrad(np.array([3,4]), 0.01, 30000)
 
 def adam(theta, alpha, num_iters, forget_gate, lamb):
     history = [[], []]
-    g = 0
+    G = 0
     s = 0
     for i in range(num_iters):
         Q = compute_grad(theta)
         #temp_x.append(Q)
-        g = lamb * g + (1 - lamb)*Q.dot(Q.T)
-        s = forget_gate * s + (alpha/((g **1/2 + 0.01))) * Q
+        G = lamb * G + (1 - lamb)*Q.dot(Q.T)
+        s = forget_gate * s + (alpha/((G **1/2 + 0.01))) * Q
         theta = theta - s;
         history[0].append(theta[0])
         history[1].append(theta[1])
