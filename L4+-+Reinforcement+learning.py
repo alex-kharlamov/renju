@@ -42,9 +42,20 @@
 # 
 # Симуляция игры запускается $10^4$ раз, и строится график в осях **[номер шага в игре]** $\times$ **[усредненная суммарная премия к текущему шагу]**.
 
-# In[2]:
+# In[130]:
 
-import numpy as np
+from tqdm import tqdm
+import seaborn as sns
+sns.set(style="darkgrid")
+import matplotlib.pyplot as plt
+get_ipython().magic('matplotlib inline')
+from tqdm import tqdm
+import multiprocessing as mp
+from itertools import repeat
+
+
+# In[131]:
+
 class Model:
     """ 
     Creates basic Model environment:
@@ -65,8 +76,8 @@ class Agent:
     to a possible action the agent can perform or to a coefficient, feedback element,
     function or constant that affects eventual actions: f:P→A.
     """
-    def __init__(self, Model):
-        self.model = Model
+    def __init__(self, model):
+        self.model = model
         self.q_function = np.zeros((self.model.actions))
     
     def argmax(self, policy):
@@ -76,14 +87,11 @@ class Agent:
         return self.model.get_reward(action)
     
     def choose_action(self, time):
-        policy_argmax = self.argmax(self.get_policy())        
-        return policy_argmax[np.random.randint(0, policy_argmax.size)]
+        policy = self.get_policy()
+        return np.random.choice(policy.size, p=policy)
     
     def correct_strategy(self, cur_reward, action):
         pass
-    
-    def get_Q(self):
-        return self.q_function
     
     def get_policy(self):
         pass
@@ -122,7 +130,7 @@ class Agent:
 # 3. Как вы инициализировали $\pi_1$?
 # 4. Нужно ли несколько стартовых игр, чтобы инициализировать $\pi_1$?
 
-# In[616]:
+# In[132]:
 
 class GreedyAgent(Agent):
     """ 
@@ -130,7 +138,7 @@ class GreedyAgent(Agent):
     """
     def __init__(self, Model):
         self.model = Model
-        self.q_function = np.zeros((self.model.actions))
+        self.q_function = np.full((self.model.actions), 1/self.model.actions)
         
     def get_policy(self):
         policy = np.zeros((self.model.actions))
@@ -155,7 +163,7 @@ class BasicModel(Model):
 
 # Возможным улучшением было бы делать несколько игр для инициализации, как минимум равное количество бандитов, чтобы агент мог изучить распределение и выбрать более оптимальную стратегию.
 
-# In[617]:
+# In[133]:
 
 def parralel_game(args):
     Agent, T = args
@@ -171,13 +179,7 @@ def parralel_game(args):
     return temp_reward_one_game
 
 
-# In[652]:
-
-import matplotlib.pyplot as plt
-get_ipython().magic('matplotlib inline')
-from tqdm import tqdm
-import multiprocessing as mp
-from itertools import repeat
+# In[134]:
 
 T = 1000
 n_steps = 1000
@@ -200,9 +202,8 @@ for n_step in tqdm(range(0, n_steps, cpu)):
     pool.close()
 
 
-# In[653]:
+# In[135]:
 
-import seaborn as sns
 plt.xlabel('Step number', fontsize = 14)
 plt.ylabel('Mean reward', fontsize = 14)
 sns.tsplot(greedy_data / n_steps, [i for i in range(T)])
@@ -222,7 +223,7 @@ sns.tsplot(greedy_data / n_steps, [i for i in range(T)])
 # 3. Как бы изменяли $\varepsilon$ по мере обучения агента?
 # 4. Опробуйте жадную и $\varepsilon$-жадную стратегии на модельной задаче. Попробуйте разные $\varepsilon$.
 
-# In[621]:
+# In[34]:
 
 class EpsGreedyAgent(Agent):
     """ 
@@ -236,15 +237,12 @@ class EpsGreedyAgent(Agent):
     def get_policy(self):
         policy = np.full((self.model.actions), self.epsilon / self.model.actions)
         best_actions = self.argmax(self.q_function)
-        np.put(policy, best_actions, (1 - self.epsilon)/len(best_actions))
+        for elem in best_actions:
+            policy[elem] += (1 - self.epsilon)/len(best_actions)
         return policy
 
 
-# In[622]:
-
-import matplotlib.pyplot as plt
-get_ipython().magic('matplotlib inline')
-from tqdm import tqdm
+# In[35]:
 
 T = 1000
 n_steps = 1000
@@ -270,19 +268,15 @@ for epsilon in range(0, 11):
     greedy_policy_data.append(reward_mean_data)
 
 
-# In[623]:
+# In[36]:
 
-import seaborn as sns
-sns.set(style="darkgrid")
-
-# Plot the response with standard error
 plt.figure(figsize=(20,10))
 for elem in range(11):
     plt.plot([i for i in range(T)], greedy_policy_data[elem]/n_steps, label='Eps = 0.' + str(elem ))
 plt.legend(fontsize=14, frameon=True)
 
 
-# In[671]:
+# In[37]:
 
 comparison = [greedy_data/n_steps]
 for elem in greedy_policy_data:
@@ -312,7 +306,7 @@ sns.barplot(x, max_values)
 # 2. Что происходит, если $\varepsilon$ стремится к $0$? А бесконечности?
 # 3. Сравните softmax и $\varepsilon$-жадную стратегии на модельной задаче.
 
-# In[666]:
+# In[41]:
 
 class SoftmaxAgent(Agent):
     """ 
@@ -320,7 +314,7 @@ class SoftmaxAgent(Agent):
     """
     def __init__(self, Model, epsilon):
         self.model = Model
-        self.q_function = np.random.uniform(size = self.model.actions)
+        self.q_function = np.zeros((self.model.actions))
         self.epsilon = epsilon
         
     def get_policy(self):
@@ -329,11 +323,7 @@ class SoftmaxAgent(Agent):
         return policy
 
 
-# In[699]:
-
-import matplotlib.pyplot as plt
-get_ipython().magic('matplotlib inline')
-from tqdm import tqdm
+# In[46]:
 
 T = 1000
 n_steps = 1000
@@ -345,7 +335,7 @@ for epsilon in range(1, 11):
     reward_mean_data = np.zeros(T)
     for n_step in tqdm(range(0, n_steps, cpu)):
         base_model = BasicModel(20)
-        softmax_agent = SoftmaxAgent(base_model, epsilon)
+        softmax_agent = SoftmaxAgent(base_model, epsilon * 0.1)
 
         temp_reward_one_game = np.zeros(T)
         cur_reward = 0
@@ -359,21 +349,17 @@ for epsilon in range(1, 11):
     softmax_policy_data.append(reward_mean_data)
 
 
-# In[700]:
+# In[47]:
 
-import seaborn as sns
-sns.set(style="darkgrid")
-
-# Plot the response with standard error
 plt.figure(figsize=(20,10))
 for elem in range(10):
-    plt.plot([i for i in range(T)], softmax_policy_data[elem]/n_steps, label='Eps = ' + str(elem ))
+    plt.plot([i for i in range(T)], softmax_policy_data[elem] / n_steps, label='Eps = ' + str(elem ))
 plt.legend(fontsize=14, frameon=True)
 
 
 # При стремлении $Eps$ к бесконечности агент все меньше будет учитывать свой накопленный опыт и будет сходиться к случайному, при стремлении же к $0$, получим ровно противоположный результат.
 
-# In[701]:
+# In[48]:
 
 comparison = []
 for elem in greedy_policy_data[1:]:
@@ -409,7 +395,7 @@ sns.barplot(x, max_values)
 # 2. Что происходит, если $\varepsilon$ увеличивается?
 # 3. На модельной задаче сравните лучшую версию $softmax$, $\varepsilon$-жадную стратегии и UCB метод.
 
-# In[705]:
+# In[49]:
 
 class UCBAgent(Agent):
     """ 
@@ -428,13 +414,7 @@ class UCBAgent(Agent):
         return action[choosen_action]
 
 
-# In[706]:
-
-import matplotlib.pyplot as plt
-get_ipython().magic('matplotlib inline')
-from tqdm import tqdm
-import multiprocessing as mp
-from itertools import repeat
+# In[50]:
 
 T = 1000
 n_steps = 1000
@@ -460,10 +440,7 @@ for epsilon in tqdm(range(1, 11)):
     ucb_policy_data.append(reward_mean_data)
 
 
-# In[707]:
-
-import seaborn as sns
-sns.set(style="darkgrid")
+# In[51]:
 
 plt.figure(figsize=(20,10))
 for elem in range(10):
@@ -471,13 +448,12 @@ for elem in range(10):
 plt.legend(fontsize=14, frameon=True)
 
 
-# In[710]:
+# In[52]:
 
 comparison = []
 for elem in ucb_policy_data:
     comparison.append(elem / n_steps)
     
-
 
 max_values = np.array(list(map(np.max, comparison)))
 
@@ -493,9 +469,9 @@ sns.barplot(x, max_values)
 
 # При стремлении $Eps$ к бесконечности наибольшую важность принимает то, сколько раз агент дергал ручку конкретного автомата, одновременно с этим же склонность к изучению снижается.
 
-# In[717]:
+# In[54]:
 
-comparison = [greedy_policy_data[2] / n_steps, softmax_policy_data[5] / n_steps, ucb_policy_data[1] / n_steps]
+comparison = [greedy_policy_data[2] / n_steps, softmax_policy_data[0] / n_steps, ucb_policy_data[1] / n_steps]
 
 max_values = np.array(list(map(np.max, comparison)))
 
@@ -533,13 +509,15 @@ sns.barplot(x, max_values)
 # 1. Реализуйте данную стратегию.
 # 2. Покажите, какая из описанных моделей ведет себя лучше на модельной задаче.
 
-# In[714]:
+# In[57]:
 
 class GradientAgent(Agent):
-    """ Implementation of Gradient Bandit Policy agent"""
+    """
+    Implementation of Gradient Bandit Policy agent
+    """
     def __init__(self, Model, alpha, gamma):
         self.model = Model
-        self.q_function = np.random.uniform(size = self.model.actions)
+        self.q_function = np.zeros((self.model.actions))
         self.alpha = alpha
         self.priority = np.zeros((self.model.actions)) + 1e-8
         self.mean_reward = 0
@@ -559,11 +537,7 @@ class GradientAgent(Agent):
         self.mean_reward += self.alpha * (cur_reward - self.mean_reward)
 
 
-# In[715]:
-
-import matplotlib.pyplot as plt
-get_ipython().magic('matplotlib inline')
-from tqdm import tqdm
+# In[61]:
 
 T = 1000
 n_steps = 1000
@@ -590,11 +564,7 @@ for alpha in tqdm(range(1, 11)):
         gradient_policy_data.append(reward_mean_data)
 
 
-# In[716]:
-
-import seaborn as sns
-sns.set(style="darkgrid")
-
+# In[62]:
 
 f, axarr = plt.subplots(10, 10, figsize=(50, 50))
 
@@ -604,11 +574,26 @@ for alpha in range(10):
         axarr[alpha, gamma].set_title("Alpha = " + str(alpha) + " gamma = " + str(gamma), fontsize=14)
 
 
-# In[727]:
+# In[68]:
+
+comparison = []
+
+for elem in gradient_policy_data:
+    comparison.append(elem)
+
+max_values = np.array(list(map(np.max, comparison)))
+
+x = [i for i in range(len(gradient_policy_data))]
+
+plt.figure(figsize=(20,15))
+sns.barplot(x, max_values)
+
+
+# In[66]:
 
 comparison = [greedy_data/n_steps, greedy_policy_data[2] / n_steps,
-              softmax_policy_data[5] / n_steps,
-              ucb_policy_data[1] / n_steps, gradient_policy_data[30]/n_steps]
+              softmax_policy_data[0] / n_steps,
+              ucb_policy_data[1] / n_steps, gradient_policy_data[33]/n_steps]
 
 max_values = np.array(list(map(np.max, comparison)))
 
@@ -756,12 +741,12 @@ sns.barplot(x, max_values)
 # 4. Выберете наиболее быстрый метод. Посмотрите, как меняется значение функции $V^*(s)$ в зависимоти от $\gamma$.
 # 5. Постройте график $\gamma \times V^*(s)$ для 5 произвольных состояний.
 
-# In[729]:
+# In[69]:
 
 class MDPModel(Model):
     def __init__(self):
-        self.states_num = 100
         self.states_row = 10
+        self.states_num = self.states_row ** 2
         self.max_actions = 4
         self.current_state = (0, 0)
         self.states = [[0 for i in range(10)] for j in range(10)]
@@ -804,7 +789,7 @@ class MDPModel(Model):
     
 
 
-# In[730]:
+# In[70]:
 
 class PolicyIterationAgent(Agent):
     def __init__(self, Model, gamma):
@@ -862,9 +847,9 @@ class PolicyIterationAgent(Agent):
     
 
 
-# In[731]:
+# In[85]:
 
-class ValueIterationAgent(Agent):
+class ValueIterationAgent(PolicyIterationAgent):
     def __init__(self, Model, gamma):
         self.model = Model
         self.gamma = gamma
@@ -879,17 +864,8 @@ class ValueIterationAgent(Agent):
         self.policy = np.zeros((self.model.states_row,
                                 self.model.states_row,
                                 self.model.max_actions))
-        self.history = [[] for i in range(5)]
+        self.history = {}
         
-    def update_Q(self, time, cur_reward, action):   
-        for action_choose in range(len(self.model.states[self.current_state[0]][self.current_state[1]])):
-            temp_sum = 0
-            for state in range(len(self.model.states[self.current_state[0]][self.current_state[1]])):
-                new_trans = self.model.states[self.current_state[0]][self.current_state[1]][state]
-                temp_sum += self.model.trans_prob[self.current_state[0]][self.current_state[1]][action_choose] * (cur_reward + self.gamma * self.values[new_trans[0]][new_trans[1]])
-            
-            self.q_function[self.current_state[0]][self.current_state[1]][action_choose] = temp_sum                                                                                                                                   
-                                                                                                
         
     def correct_strategy(self, cur_reward, action):
         prob_sum = 0
@@ -901,47 +877,16 @@ class ValueIterationAgent(Agent):
             prob_sum = max(prob_sum, temp_sum)
         
         self.values[self.current_state[0]][self.current_state[1]] = prob_sum
-        if self.current_state == (2,2):
-            self.history[0].append(prob_sum)
-            
-        if self.current_state == (3,1):
-            self.history[1].append(prob_sum)
-        
-        if self.current_state == (0,5):
-            self.history[2].append(prob_sum)
-            
-        if self.current_state == (8,7):
-            self.history[3].append(prob_sum)
-            
-        if self.current_state == (5,5):
-            self.history[4].append(prob_sum)
+        if self.current_state in self.history.keys():
+            self.history[self.current_state].append(prob_sum)
+        else:
+            self.history[self.current_state] = [prob_sum]
         
         
-        self.current_state = action
-        
-                                                                                                                                         
-    
-    def get_policy(self):
-        available_actions = len(self.model.states[self.current_state[0]][self.current_state[1]])
-        best_actions = self.argmax(self.q_function[self.current_state[0]][self.current_state[1]][:available_actions])
-        policy = np.zeros((available_actions))
-        np.put(policy, best_actions, 1/available_actions)
-        return policy
-    
-    def choose_action(self, time):
-        policy = self.get_policy()
-        policy_argmax = self.argmax(policy)
-        action = policy_argmax[ np.random.randint(0, len(policy_argmax)) ]
-        return self.model.states[self.current_state[0]][self.current_state[1]][action]    
+        self.current_state = action  
 
 
-# In[732]:
-
-import matplotlib.pyplot as plt
-get_ipython().magic('matplotlib inline')
-from tqdm import tqdm
-import multiprocessing as mp
-from itertools import repeat
+# In[72]:
 
 T = 1000
 
@@ -971,33 +916,21 @@ for epsilon in tqdm(range(1, 11)):
     policy_data_time.append(time)
 
 
-# In[733]:
-
-import seaborn as sns
-sns.set(style="darkgrid")
+# In[73]:
 
 plt.figure(figsize=(10,5))
 
 plt.plot([0.1 * i for i in range(1, 11)] ,policy_data)
 
 
-# In[734]:
-
-import seaborn as sns
-sns.set(style="darkgrid")
+# In[74]:
 
 plt.figure(figsize=(10,5))
 
 plt.plot([0.1 * i for i in range(1, 11)] ,policy_data_time)
 
 
-# In[735]:
-
-import matplotlib.pyplot as plt
-get_ipython().magic('matplotlib inline')
-from tqdm import tqdm
-import multiprocessing as mp
-from itertools import repeat
+# In[86]:
 
 T = 1000
 
@@ -1027,29 +960,24 @@ for epsilon in tqdm(range(1, 11)):
     value_history.append(policy_agent.history)
 
 
-# In[736]:
-
-import seaborn as sns
-sns.set(style="darkgrid")
+# In[87]:
 
 plt.figure(figsize=(10,5))
 
 plt.plot([0.1 * i for i in range(1, 11)] , value_policy_data)
 
 
-# In[737]:
-
-import seaborn as sns
-sns.set(style="darkgrid")
+# In[77]:
 
 plt.figure(figsize=(10,5))
 
 plt.plot([0.1 * i for i in range(1, 11)] ,value_policy_data_time)
 
 
-# In[755]:
+# In[114]:
 
-plt.plot(value_history[8][0])
+plt.semilogx(value_history[-1][(2,6)])
+plt.semilogx(value_history[-1][(2,7)])
 plt.xlabel('Time')
 plt.ylabel('Value')
 
@@ -1089,7 +1017,7 @@ plt.ylabel('Value')
 # 3. Сравните на сколько сильно отличаются оценки $Q(s_t, a_t)$. Предложите свой способ.
 # 4. Попробуйте сыграть со своим алгоритма. Используйте намеренно проигрышную стратегию за ноликов. Что произошло? Попробуйте обыграть агента за крестиков.
 
-# In[3]:
+# In[115]:
 
 class TicTacToeModel(Model):
     def __init__(self):
@@ -1156,7 +1084,7 @@ class TicTacToeModel(Model):
         self.x_place = 0
 
 
-# In[4]:
+# In[120]:
 
 class TicTacToeSARSAPlayer(Agent):
     def __init__(self, game, mode, epsilon, alpha, gamma):
@@ -1204,6 +1132,10 @@ class TicTacToeSARSAPlayer(Agent):
         if self.mode == -1:
             game.zeros_place |= diff
             
+    def choose_action(self, time):
+        policy_argmax = self.argmax(self.get_policy())        
+        return policy_argmax[np.random.randint(0, policy_argmax.size)]
+            
 
     def step(self, time):
         action = self.choose_action(time)
@@ -1214,7 +1146,7 @@ class TicTacToeSARSAPlayer(Agent):
         return cur_reward
 
 
-# In[50]:
+# In[127]:
 
 class TicTacToeQPlayer(Agent):
     def __init__(self, game, mode, epsilon, alpha, gamma):
@@ -1230,7 +1162,7 @@ class TicTacToeQPlayer(Agent):
     def update_Q(self, time, cur_reward, action):
         current_state = 1022 ^ (game.zeros_place | game.x_place)
         action = self.choose_action(time)
-        q_next_state = 0#self.pool_activity[action]
+        q_next_state = 0
         for elem in self.pool_activity:
             q_next_state = max(q_next_state, self.q_function[elem])
         self.q_function[current_state] += self.alpha * (game.get_reward(self.mode) + self.gamma * q_next_state  - self.q_function[current_state] )
@@ -1254,6 +1186,10 @@ class TicTacToeQPlayer(Agent):
         np.put(policy, argmax_states, (1 - self.epsilon) / len(argmax_states))
         self.pool_activity = pool_activity
         return policy
+    
+    def choose_action(self, time):
+        policy_argmax = self.argmax(self.get_policy())        
+        return policy_argmax[np.random.randint(0, policy_argmax.size)]
         
     def do_action(self, action):
         cur_state = self.pool_activity[action]
@@ -1275,30 +1211,29 @@ class TicTacToeQPlayer(Agent):
         return cur_reward
 
 
-# In[17]:
+# In[122]:
 
 game = TicTacToeModel()
 ex = TicTacToeSARSAPlayer(game, 1, 0.4, 0.02, 0.99)
 zero = TicTacToeSARSAPlayer(game, -1, 0.4, 0.02, 0.99)
 
 
-# In[18]:
+# In[123]:
 
-from tqdm import tqdm
 for iteration in tqdm(range(200000)):
     ex.step(1)
     zero.step(1)
 print('X win = ', game.x_wins, ' Zero win = ', game.zero_wins)
 
 
-# In[51]:
+# In[128]:
 
 game = TicTacToeModel()
 ex = TicTacToeQPlayer(game, 1, 0.2, 0.01, 0.99)
 zero = TicTacToeQPlayer(game, -1, 0.2, 0.01, 0.99)
 
 
-# In[52]:
+# In[129]:
 
 for iteration in tqdm(range(200000)):
     ex.step(1)
