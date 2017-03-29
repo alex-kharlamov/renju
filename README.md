@@ -1,12 +1,12 @@
-#ПРОЕКТ "Renju"
-####Харламов Алексей Владиславович, БПМИ153
+# ПРОЕКТ "Renju"
+#### Харламов Алексей Владиславович, БПМИ153
 
-![Renju](http://www.picshare.ru/uploads/161217/CqOiM87gfK.jpg)
+![Renju](http://i64.tinypic.com/9tg6zk.png)
 
-##Постановка задачи
+## Постановка задачи
 Cочетание [reinforcement learning](https://en.wikipedia.org/wiki/Reinforcement_learning) и [deep learning](https://en.wikipedia.org/wiki/Deep_learning) является "горячей" темой на сегодняшний день. К примеру, существует статья  [Playing atari with deep reinforcement learning](http://arxiv.org/pdf/1312.5602v1.pdf). Также широко известна [AlphaGo](https://en.wikipedia.org/wiki/AlphaGo), программа, которая впервые победила человека, профессионально играющего в Go. Подробнее об этом [здесь](https://storage.googleapis.com/deepmind-media/alphago/AlphaGoNaturePaper.pdf). Данный проект заключается в изучении подходов, использующихся  в AlphaGo, и их реализации при создание собственного алгоритма для игры в  [рендзю](https://en.wikipedia.org/wiki/Renju).
 
-##Технологические решения
+## Технологические решения
 Ввиду схожести игр Го и Рендзю, рассмотрим общий пул готовых решений, позволяющий оценить уровень технологических достижений.
 Существует [Leela](http://senseis.xmp.net/?Leela) - первая программа использующая метод Монте-Карло, также применяет технологии глубокого обучения.
 [Fuego](http://senseis.xmp.net/?Fuego) - первая программа победившая профессионала 9 дана в Го(9х9), использует метод Монте-Карло.
@@ -24,7 +24,7 @@ Cочетание [reinforcement learning](https://en.wikipedia.org/wiki/Reinfor
 5.  Matplotlib\Scipy - визуализация и работа с полученными данными ввиду отсутствия заменителей.
 6.  Amazon AWS - облачные вычисления из-за наличия серверов с GPU.
 
-##План реализации
+## План реализации
 
 1.  Выполнение лабораторных работ, направленных на реализацию каких-либо аспектов проектной работы:
 
