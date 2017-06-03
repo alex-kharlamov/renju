@@ -46,6 +46,8 @@ def conv_tup(tupik):
 
 time_for_search = 9
 
+#mv = 0
+
 def main():
     logging.basicConfig(filename='dummy.log', level=logging.DEBUG)
     logging.debug("Start dummy backend...")
@@ -53,6 +55,7 @@ def main():
 
     env = RenjuTEST(1, 'me')
     tree = UCT(env, model, 'kn' if random.randint(0,1) == 0 else 'neuron')
+    st = 0
     
     try:
         while True:
@@ -62,10 +65,18 @@ def main():
 
             if (len(pos) > 0):
                 env.in_step(conv_tup(pos[-1]))
-
+                st += 1
+			
+			
             tree = UCT(env, model, 'kn' if random.randint(0,1) == 0 else 'neuron')
             tree_act = tree.do_mcst(time_for_search)
+
+            if st == 0:
+                tree_act = 112
+            st += 1
             env.in_step(tree_act)
+
+
             tree_act = inverse_convert(tree_act)
             backend.move(tree_act)
 

@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+#include <stdlib.h>
 
 int transform_pos(int w, int h){
 	return ((h + 5) * 25) + (w + 5);
@@ -11,6 +13,21 @@ int transform_pos_norm(int w, int h){
 
 
 void get_points(double* data, int *to_look, int counter, int cur_player, double *points) {
+/*
+	char pattern_first[20][10] = {"11111", "011110", "01111", "11110","010111","011011","011101",
+	"111010","110110","101110","01110","0111","1110",
+	"01101","01011","11010","10110","0110","10","01"};
+
+	char pattern_second[20][10] = {"22222", "022220", "02222", "22220","020222","022022","022202",
+	"222020","220220","202220","02220","0222","2220",
+	"02202","02022","22020","20220","0220","20","02"};
+
+	long long cost[20] = {999999999, 7000, 4000, 4000, 2500, 2500, 2500,
+	 2500, 2500, 2500, 3000, 1500, 1500,
+	  2000, 2000, 2000, 2000, 200, 50, 50};
+
+*/
+
 	char pattern_first[20][10] = {"11111", "011110", "01111", "11110","010111","011011","011101",
 	"111010","110110","101110","01110","0111","1110",
 	"01101","01011","11010","10110","0110","10","01"};
@@ -25,6 +42,10 @@ void get_points(double* data, int *to_look, int counter, int cur_player, double 
 
 
 	for(int elem = 0; elem < counter; elem++){
+
+        if (to_look[elem] < 0 || to_look[elem] > 224){
+            continue;
+        }
 		int w = to_look[elem] % 15;
 		int h = to_look[elem] / 15;
 
@@ -72,7 +93,7 @@ void get_points(double* data, int *to_look, int counter, int cur_player, double 
 						for (int k = i; k < i + strlen(pattern_first[pos_check]); ++k){
 							if (positions[k] > 0 && positions[k] < 225){
 								if (cur_player == 1){
-									points[positions[k]] += cost[pos_check] + (cost[pos_check] / 20);
+									points[positions[k]] += cost[pos_check] + (cost[pos_check] / 10);
 								} else {
 									points[positions[k]] += cost[pos_check];
 								}
@@ -94,7 +115,7 @@ void get_points(double* data, int *to_look, int counter, int cur_player, double 
 						for (int k = i; k < i + strlen(pattern_second[pos_check]); ++k){
 							if (positions[k] > 0 && positions[k] < 225){
 								if (cur_player == 2){
-									points[positions[k]] += cost[pos_check] + (cost[pos_check] / 20);
+									points[positions[k]] += cost[pos_check] + (cost[pos_check] / 10);
 								} else {
 									points[positions[k]] += cost[pos_check];
 								}
@@ -224,7 +245,7 @@ void get_policy(double *data, int cur_player, double *points) {
 	fclose(test);
 	*/
 
-	int to_look_mine[225], to_look_opp[225];
+	int to_look_mine[6250], to_look_opp[6250];
 
 	int look_mine_counter = 0, look_opp_counter = 0;
 
@@ -232,69 +253,137 @@ void get_policy(double *data, int cur_player, double *points) {
 	for (int h = 0;  h < 15; ++h){
 		for (int w = 0; w < 15; ++w)
 		{
-			
+			/*
 			if (data[transform_pos(w, h)] != 0){
 				if (data[transform_pos(w, h)] == cur_player){
 					to_look_mine[look_mine_counter] = (h * 15) + w;
 					look_mine_counter++;
-					/*
-					to_look_mine[look_mine_counter] = ((h + 1) * 15) + (w + 1);
-					look_mine_counter++;
+			
+					if (w > 1 && h > 1 && w < 13 && h < 13){
+						to_look_mine[look_mine_counter] = ((h + 1) * 15) + (w + 1);
+						look_mine_counter++;
 
-					to_look_mine[look_mine_counter] = ((h + 1) * 15) + (w);
-					look_mine_counter++;
+						to_look_mine[look_mine_counter] = ((h + 1) * 15) + (w);
+						look_mine_counter++;
 
-					to_look_mine[look_mine_counter] = ((h + 1) * 15) + (w - 1);
-					look_mine_counter++;
+						to_look_mine[look_mine_counter] = ((h + 1) * 15) + (w - 1);
+						look_mine_counter++;
 
-					to_look_mine[look_mine_counter] = ((h ) * 15) + (w - 1);
-					look_mine_counter++;
+						to_look_mine[look_mine_counter] = ((h ) * 15) + (w - 1);
+						look_mine_counter++;
 
-					to_look_mine[look_mine_counter] = ((h - 1) * 15) + (w - 1);
-					look_mine_counter++;
+						to_look_mine[look_mine_counter] = ((h - 1) * 15) + (w - 1);
+						look_mine_counter++;
 
-					to_look_mine[look_mine_counter] = ((h - 1) * 15) + (w);
-					look_mine_counter++;
+						to_look_mine[look_mine_counter] = ((h - 1) * 15) + (w);
+						look_mine_counter++;
 
-					to_look_mine[look_mine_counter] = ((h - 1) * 15) + (w + 1);
-					look_mine_counter++;
-					*/
+						to_look_mine[look_mine_counter] = ((h - 1) * 15) + (w + 1);
+						look_mine_counter++;
+
+
+
+
+                        if (w > 3 && h > 3 && w < 11 && h < 11){
+
+						    to_look_mine[look_mine_counter] = ((h + 2) * 15) + (w + 2);
+						    look_mine_counter++;
+
+						    to_look_mine[look_mine_counter] = ((h + 2) * 15) + (w);
+						    look_mine_counter++;
+
+						    to_look_mine[look_mine_counter] = ((h + 2) * 15) + (w - 2);
+						    look_mine_counter++;
+
+						    to_look_mine[look_mine_counter] = ((h ) * 15) + (w - 2);
+						    look_mine_counter++;
+
+						    to_look_mine[look_mine_counter] = ((h - 2) * 15) + (w - 2);
+						    look_mine_counter++;
+
+						    to_look_mine[look_mine_counter] = ((h - 2) * 15) + (w);
+						    look_mine_counter++;
+
+						    to_look_mine[look_mine_counter] = ((h - 2) * 15) + (w + 2);
+						    look_mine_counter++;
+                        }
+					}
+					
 				} else {
 					to_look_opp[look_opp_counter] = (h * 15) + w;
 					look_opp_counter++;
-					/*
-					to_look_opp[look_opp_counter] = ((h + 1) * 15) + (w + 1);
-					look_opp_counter++;
 
-					to_look_opp[look_opp_counter] = ((h + 1) * 15) + (w);
-					look_opp_counter++;
+					if (w > 1 && h > 1 && w < 13 && h < 13){
+						to_look_opp[look_opp_counter] = ((h + 1) * 15) + (w + 1);
+						look_opp_counter++;
 
-					to_look_opp[look_opp_counter] = ((h + 1) * 15) + (w - 1);
-					look_opp_counter++;
+						to_look_opp[look_opp_counter] = ((h + 1) * 15) + (w);
+						look_opp_counter++;
 
-					to_look_opp[look_opp_counter] = ((h ) * 15) + (w - 1);
-					look_opp_counter++;
+						to_look_opp[look_opp_counter] = ((h + 1) * 15) + (w - 1);
+						look_opp_counter++;
 
-					to_look_opp[look_opp_counter] = ((h - 1) * 15) + (w - 1);
-					look_opp_counter++;
+						to_look_opp[look_opp_counter] = ((h ) * 15) + (w - 1);
+						look_opp_counter++;
 
-					to_look_opp[look_opp_counter] = ((h - 1) * 15) + (w);
-					look_opp_counter++;
+						to_look_opp[look_opp_counter] = ((h - 1) * 15) + (w - 1);
+						look_opp_counter++;
 
-					to_look_opp[look_opp_counter] = ((h - 1) * 15) + (w + 1);
-					look_opp_counter++;
-					*/
+						to_look_opp[look_opp_counter] = ((h - 1) * 15) + (w);
+						look_opp_counter++;
+
+						to_look_opp[look_opp_counter] = ((h - 1) * 15) + (w + 1);
+						look_opp_counter++;
+
+
+                        if (w > 3 && h > 3 && w < 11 && h < 11){
+
+						    to_look_opp[look_opp_counter] = ((h + 2) * 15) + (w + 2);
+						    look_opp_counter++;
+
+						    to_look_opp[look_opp_counter] = ((h + 2) * 15) + (w);
+						    look_opp_counter++;
+
+						    to_look_opp[look_opp_counter] = ((h + 2) * 15) + (w - 2);
+						    look_opp_counter++;
+
+						    to_look_opp[look_opp_counter] = ((h ) * 15) + (w - 2);
+						    look_opp_counter++;
+
+						    to_look_opp[look_opp_counter] = ((h - 2) * 15) + (w - 2);
+						    look_opp_counter++;
+
+						    to_look_opp[look_opp_counter] = ((h - 2) * 15) + (w);
+						    look_opp_counter++;
+
+						    to_look_opp[look_opp_counter] = ((h - 2) * 15) + (w + 2);
+						    look_opp_counter++;
+
+                        }
+
+					}
+					
 				}
 			}
+*/          
+            to_look_mine[look_mine_counter] = (h * 15) + w;
+			look_mine_counter++;
+
+            to_look_opp[look_opp_counter] = (h * 15) + w;
+			look_opp_counter++;
+
 			
 			//to_look_mine[look_mine_counter] = (h * 15) + w;
 			//look_mine_counter++;
 		}
 	}
 	//unsigned long long points[625];
+
+	srand(time(NULL));
 	for (int i = 0; i < 225; ++i)
 	{
-		points[i] = 0;
+		srand(time(NULL));
+		points[i] = rand() % 20;
 	}
 
 	get_points(data, to_look_mine, look_mine_counter, cur_player, points);
